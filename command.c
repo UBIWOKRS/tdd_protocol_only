@@ -44,6 +44,9 @@
 #include "console.h"
 #include "ad9361_api.h"
 #include "dac_core.h"
+#include "platform.h"
+#include "parameters.h"
+#include "xil_io.h"
 
 /******************************************************************************/
 /************************ Constants Definitions *******************************/
@@ -103,6 +106,8 @@ command cmd_list[] = {
 	{"dds_tx2_tone1_scale=", "Sets the DDS TX2 Tone 1 scale.", "", set_dds_tx2_tone1_scale},
 	{"dds_tx2_tone2_scale?", "Gets current DDS TX2 Tone 2 scale.", "", dds_tx2_tone2_scale},
 	{"dds_tx2_tone2_scale=", "Sets the DDS TX2 Tone 2 scale.", "", set_dds_tx2_tone2_scale},
+	{"r?"					, "Prints the 5-Power Management Values."		, "", print_power_management_values	},
+	{"c="					, "Resets and Clears the Peak Stay Register."	, "", reset_peak_stay				},
 };
 const char cmd_no = (sizeof(cmd_list) / sizeof(command));
 
@@ -1006,4 +1011,55 @@ void set_dds_tx2_tone2_scale(double* param, char param_no)	// dds_tx2_tone2_scal
 	}
 	else
 		show_invalid_param_message(1);
+}
+
+/**************************************************************************//***
+ * @brief Power Management Printouts.
+ *
+ * @return None.
+*******************************************************************************/
+void print_power_management_values(double* param, char param_no)
+{
+	console_print("\n");
+	console_print("\n");
+
+	console_print("*******************************************************\n");
+	console_print("*************** POWER MEASUREMENTS ****************\n");
+	console_print("*******************************************************\n");
+	console_print("IF LEVEL 			= %d\n",Xil_In32(GPIO_IF_LVL_BLK		)	);
+	console_print("BLOCK POWER 			= %d\n",Xil_In32(GPIO_IF_LVL_BLK + 0x08 )	);
+	console_print("PEAK POWER 			= %d\n",Xil_In32(GPIO_PEAK_PWR_ST		)	);
+	console_print("PEAK STAY 			= %d\n",Xil_In32(GPIO_PEAK_PWR_ST + 0x08)	);
+	console_print("MAG_12BIT_NO_LIMIT	= %d\n",Xil_In32(GPIO_MAG_12BIT			)	);
+	console_print("*******************************************************\n\n");
+
+	console_print("\n================== Power data dBm ==================\n");
+
+	double Avg_Power = 10 * log(10*Xil_In32(GPIO_IF_LVL_BLK));
+	console_print("\nAvg Power       = %f dBm\n", (Avg_Power-193));
+
+	double Block_Power = 10 * log(10*Xil_In32(GPIO_IF_LVL_BLK + 0x08));
+	console_print("Block Power     = %f dBm\n", (Block_Power-193));
+
+	double Peak_Power = 10 * log(10*Xil_In32(GPIO_PEAK_PWR_ST));
+	console_print("Peak Power      = %f dBm\n", (Peak_Power-193));
+
+	double Peak_Stay = 10 * log(10*Xil_In32(GPIO_PEAK_PWR_ST + 0x08));
+	console_print("Keep Peak Power = %f dBm\n", (Peak_Stay-193));
+
+	console_print("\n=================== Power dBm END ==================\n");
+}
+
+/**************************************************************************//***
+ * @brief Reset Peak Stay Register.
+ *
+ * @return None.
+*******************************************************************************/
+void reset_peak_stay(double* param, char param_no)
+{
+	console_print("clearing PEAK STAY Registers.............\n\n");
+	Xil_Out16((GPIO_MAG_12BIT + 0x08),0x01);
+	udelay(10000);
+	Xil_Out16((GPIO_MAG_12BIT + 0x08),0x00);
+	console_print("PEAK STAY Register Cleared!!!\n\n");
 }

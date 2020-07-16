@@ -224,4 +224,10 @@ void dds_tx2_tone2_scale(double* param, char param_no);
 /* Sets the DDS TX2 Tone 2 scale. */
 void set_dds_tx2_tone2_scale(double* param, char param_no);
 
+/* Read Power Management Functions scale. */
+void print_power_management_values(double* param, char param_no);
+
+/* Reset Peak Stay Register. */
+void reset_peak_stay(double* param, char param_no);
+
 #endif  // __COMMAND_H__

@@ -54,6 +54,7 @@
 #if defined XILINX_PLATFORM || defined LINUX_PLATFORM || defined ALTERA_PLATFORM
 #include "adc_core.h"
 #include "dac_core.h"
+#include "xil_io.h"
 #endif
 
 #include "protocol.h"
@@ -84,11 +85,13 @@ AD9361_InitParam default_init_param = {
 	30720000UL,	//reference_clk_rate		// 40000000UL -> 30720000UL dylee modify
 	/* Base Configuration */
 
-	//1,		//two_rx_two_tx_mode_enable *** adi,2rx-2tx-mode-enable
+//	1,		//two_rx_two_tx_mode_enable *** adi,2rx-2tx-mode-enable
 	0,		//two_rx_two_tx_mode_enable *** adi,2rx-2tx-mode-enable		// dylee change
 
-	1,		//one_rx_one_tx_mode_use_rx_num *** adi,1rx-1tx-mode-use-rx-num
-	1,		//one_rx_one_tx_mode_use_tx_num *** adi,1rx-1tx-mode-use-tx-num
+//	1,		//one_rx_one_tx_mode_use_rx_num *** adi,1rx-1tx-mode-use-rx-num     // sylee change
+//	1,		//one_rx_one_tx_mode_use_tx_num *** adi,1rx-1tx-mode-use-tx-num     // sylee change
+	0,		//one_rx_one_tx_mode_use_rx_num *** adi,1rx-1tx-mode-use-rx-num
+	0,		//one_rx_one_tx_mode_use_tx_num *** adi,1rx-1tx-mode-use-tx-num
 	1,		//frequency_division_duplex_mode_enable *** adi,frequency-division-duplex-mode-enable
 	0,		//frequency_division_duplex_independent_mode_enable *** adi,frequency-division-duplex-independent-mode-enable
 	0,		//tdd_use_dual_synth_mode_enable *** adi,tdd-use-dual-synth-mode-enable
@@ -116,20 +119,29 @@ AD9361_InitParam default_init_param = {
 	//2400000000UL,	//tx_synthesizer_frequency_hz *** adi,tx-synthesizer-frequency-hz
 	//3452320000UL,	//rx_synthesizer_frequency_hz *** adi,rx-synthesizer-frequency-hz	// dylee change
 	//3452320000UL,	//tx_synthesizer_frequency_hz *** adi,tx-synthesizer-frequency-hz	// dylee change
-	1750000000UL,	//rx_synthesizer_frequency_hz *** adi,rx-synthesizer-frequency-hz	// dylee change
-	1750000000UL,	//tx_synthesizer_frequency_hz *** adi,tx-synthesizer-frequency-hz	// dylee change
+
+	// test version ========================================================================================================
+	1840000000UL,	//rx_synthesizer_frequency_hz *** adi,rx-synthesizer-frequency-hz	// dylee change
+	1840000000UL,	//tx_synthesizer_frequency_hz *** adi,tx-synthesizer-frequency-hz	// dylee change
+
+	// release version =====================================================================================================
+	//1755000000UL,	//rx_synthesizer_frequency_hz *** adi,rx-synthesizer-frequency-hz	// dylee change
+	//1755000000UL,	//tx_synthesizer_frequency_hz *** adi,tx-synthesizer-frequency-hz	// dylee change
 
 	1,				//tx_lo_powerdown_managed_enable *** adi,tx-lo-powerdown-managed-enable
 	/* Rate & BW Control */
 	{983040000, 245760000, 122880000, 61440000, 30720000, 30720000},// rx_path_clock_frequencies[6] *** adi,rx-path-clock-frequencies
 	{983040000, 122880000, 122880000, 61440000, 30720000, 30720000},// tx_path_clock_frequencies[6] *** adi,tx-path-clock-frequencies
-	//18000000,//rf_rx_bandwidth_hz *** adi,rf-rx-bandwidth-hz
-	//18000000,//rf_tx_bandwidth_hz *** adi,rf-tx-bandwidth-hz
+//	1000000,//rf_rx_bandwidth_hz *** adi,rf-rx-bandwidth-hz
+//	1000000,//rf_tx_bandwidth_hz *** adi,rf-tx-bandwidth-hz
 	15360000,//rf_rx_bandwidth_hz *** adi,rf-rx-bandwidth-hz		// dylee change
 	15360000,//rf_tx_bandwidth_hz *** adi,rf-tx-bandwidth-hz		// dylee change
+//	5000000,//rf_rx_bandwidth_hz *** adi,rf-rx-bandwidth-hz		// sylee change
+//	5000000,//rf_tx_bandwidth_hz *** adi,rf-tx-bandwidth-hz		// sylee change
+
 	/* RF Port Control */
 
-	//0,		//rx_rf_port_input_select *** adi,rx-rf-port-input-select
+//	0,		//rx_rf_port_input_select *** adi,rx-rf-port-input-select
 	3,		//rx_rf_port_input_select *** adi,rx-rf-port-input-select		// dylee change 3 ok
 
 	0,		//tx_rf_port_input_select *** adi,tx-rf-port-input-select
@@ -141,12 +153,14 @@ AD9361_InitParam default_init_param = {
 	{8, 5920},	//dcxo_coarse_and_fine_tune[2] *** adi,dcxo-coarse-and-fine-tune
 	CLKOUT_DISABLE,	//clk_output_mode_select *** adi,clk-output-mode-select
 	/* Gain Control */
-	2,		//gc_rx1_mode *** adi,gc-rx1-mode
-	2,		//gc_rx2_mode *** adi,gc-rx2-mode
+//	2,		//gc_rx1_mode *** adi,gc-rx1-mode  // Original
+//	2,		//gc_rx2_mode *** adi,gc-rx2-mode  // Original
+	0,		//gc_rx1_mode *** adi,gc-rx1-mode															// sylee change
+	0,		//gc_rx2_mode *** adi,gc-rx2-mode															// sylee change
 	58,		//gc_adc_large_overload_thresh *** adi,gc-adc-large-overload-thresh
 	4,		//gc_adc_ovr_sample_size *** adi,gc-adc-ovr-sample-size
 	47,		//gc_adc_small_overload_thresh *** adi,gc-adc-small-overload-thresh
-	8192,	//gc_dec_pow_measurement_duration *** adi,gc-dec-pow-measurement-duration
+	8,		//gc_dec_pow_measurement_duration *** adi,gc-dec-pow-measurement-duration
 	0,		//gc_dig_gain_enable *** adi,gc-dig-gain-enable
 	800,	//gc_lmt_overload_high_thresh *** adi,gc-lmt-overload-high-thresh
 	704,	//gc_lmt_overload_low_thresh *** adi,gc-lmt-overload-low-thresh
@@ -165,7 +179,7 @@ AD9361_InitParam default_init_param = {
 	10,		//agc_adc_small_overload_exceed_counter *** adi,agc-adc-small-overload-exceed-counter
 	4,		//agc_dig_gain_step_size *** adi,agc-dig-gain-step-size
 	3,		//agc_dig_saturation_exceed_counter *** adi,agc-dig-saturation-exceed-counter
-	1000,	// agc_gain_update_interval_us *** adi,agc-gain-update-interval-us
+	1000,	//agc_gain_update_interval_us *** adi,agc-gain-update-interval-us
 	0,		//agc_immed_gain_change_if_large_adc_overload_enable *** adi,agc-immed-gain-change-if-large-adc-overload-enable
 	0,		//agc_immed_gain_change_if_large_lmt_overload_enable *** adi,agc-immed-gain-change-if-large-lmt-overload-enable
 	10,		//agc_inner_thresh_high *** adi,agc-inner-thresh-high
@@ -330,55 +344,73 @@ AD9361_InitParam default_init_param = {
 	NULL	//(*ad9361_rfpll_ext_set_rate)()
 };
 
-AD9361_RXFIRConfig rx_fir_config = {	// BPF PASSBAND 3/20 fs to 1/4 fs
+//================================================================================================================================================================================================================
+
+// SY Lee
+// Generated with AD9361 Filter Design Wizard 16.1.3
+// MATLAB 9.8.0.1396136 (R2020a) Update 3, 07-Jul-2020 10:18:41
+// Inputs:
+// Data Sample Frequency = 30720000 Hz
+// LTE 20MBW
+
+AD9361_RXFIRConfig rx_fir_config = {
 	3, // rx
-	0, // rx_gain
-	1, // rx_dec
-	{-4, -6, -37, 35, 186, 86, -284, -315,
-	 107, 219, -4, 271, 558, -307, -1182, -356,
-	 658, 157, 207, 1648, 790, -2525, -2553, 748,
-	 865, -476, 3737, 6560, -3583, -14731, -5278, 14819,
-	 14819, -5278, -14731, -3583, 6560, 3737, -476, 865,
-	 748, -2553, -2525, 790, 1648, 207, 157, 658,
-	 -356, -1182, -307, 558, 271, -4, 219, 107,
-	 -315, -284, 86, 186, 35, -37, -6, -4,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0}, // rx_coef[128]
-	 64, // rx_coef_size
-	 {0, 0, 0, 0, 0, 0}, //rx_path_clks[6]
-	 0 // rx_bandwidth
+	-6, // rx_gain
+	2, // rx_dec
+	{-9,-23,-20,-22,12,20,29,-5,-30,-43,-6,40,64,24,-47,-90,-49,49,122,85,-44,-158,-134,29,196,196,-1,-234,-274,-46,270,368,114,-298,-481,-212,315,612,344,-312,-762,-522,282,935,757,-212,-1133,-1074,80,1365,1510,149,-1646,-2146,-551,2016,3173,1310,-2634,-5298,-3194,4431,14435,21470,21470,14435,4431,-3194,-5298,-2634,1310,3173,2016,-551,-2146,-1646,149,1510,1365,80,-1074,-1133,-212,757,935,282,-522,-762,-312,344,612,315,-212,-481,-298,114,368,270,-46,-274,-234,-1,196,196,29,-134,-158,-44,85,122,49,-49,-90,-47,24,64,40,-6,-43,-30,-5,29,20,12,-22,-20,-23,-9}, // rx_coef[128]
+	128, // rx_coef_size
+	{983040000,491520000,245760000,122880000,61440000,30720000}, // rx_path_clks[6]
+	19365514 // rx_bandwidth
 };
 
-AD9361_TXFIRConfig tx_fir_config = {	// BPF PASSBAND 3/20 fs to 1/4 fs
+AD9361_TXFIRConfig tx_fir_config = {
 	3, // tx
-	-6, // tx_gain
-	1, // tx_int
-	{-4, -6, -37, 35, 186, 86, -284, -315,
-	 107, 219, -4, 271, 558, -307, -1182, -356,
-	 658, 157, 207, 1648, 790, -2525, -2553, 748,
-	 865, -476, 3737, 6560, -3583, -14731, -5278, 14819,
-	 14819, -5278, -14731, -3583, 6560, 3737, -476, 865,
-	 748, -2553, -2525, 790, 1648, 207, 157, 658,
-	 -356, -1182, -307, 558, 271, -4, 219, 107,
-	 -315, -284, 86, 186, 35, -37, -6, -4,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0}, // tx_coef[128]
-	 64, // tx_coef_size
-	 {0, 0, 0, 0, 0, 0}, // tx_path_clks[6]
-	 0 // tx_bandwidth
+	0, // tx_gain
+	2, // tx_int
+	{-5,0,4,23,36,39,18,-13,-36,-26,11,48,46,-2,-60,-72,-16,69,104,43,-74,-142,-82,71,184,136,-57,-228,-205,26,272,291,25,-311,-395,-101,342,519,210,-357,-663,-361,349,829,564,-307,-1022,-841,216,1251,1225,-44,-1536,-1793,-268,1930,2728,873,-2622,-4718,-2416,4788,13982,20380,20380,13982,4788,-2416,-4718,-2622,873,2728,1930,-268,-1793,-1536,-44,1225,1251,216,-841,-1022,-307,564,829,349,-361,-663,-357,210,519,342,-101,-395,-311,25,291,272,26,-205,-228,-57,136,184,71,-82,-142,-74,43,104,69,-16,-72,-60,-2,46,48,11,-26,-36,-13,18,39,36,23,4,0,-5}, // tx_coef[128]
+	128, // tx_coef_size
+	{983040000,245760000,245760000,122880000,61440000,30720000}, // tx_path_clks[6]
+	19365438 // tx_bandwidth
 };
+
+//================================================================================================================================================================================================================
+
+//================================================================================================================================================================================================================
+
+// SY Lee
+// Generated with AD9361 Filter Design Wizard 16.1.3
+// MATLAB 9.8.0.1396136 (R2020a) Update 3, 07-Jul-2020 12:19:53
+// Inputs:
+// Data Sample Frequency = 30720000 Hz
+// LTE 5MBW
+
+//AD9361_RXFIRConfig rx_fir_config = {
+//	3, // rx
+//	6, // rx_gain
+//	2, // rx_dec
+//	{5631,-17480,27007,-27949,24215,-19683,15942,-12850,10390,-8568,6945,-5970,4782,-4355,3380,-3311,2448,-2604,1823,-2089,1404,-1679,1127,-1335,954,-1033,847,-770,777,-558,731,-409,672,-318,590,-289,471,-311,327,-365,161,-426,11,-474,-107,-476,-150,-436,-102,-315,21,-115,228,143,475,465,721,788,976,1038,1202,1212,1326,1318,1318,1326,1212,1202,1038,976,788,721,465,475,143,228,-115,21,-315,-102,-436,-150,-476,-107,-474,11,-426,161,-365,327,-311,471,-289,590,-318,672,-409,731,-558,777,-770,847,-1033,954,-1335,1127,-1679,1404,-2089,1823,-2604,2448,-3311,3380,-4355,4782,-5970,6945,-8568,10390,-12850,15942,-19683,24215,-27949,27007,-17480,5631}, // rx_coef[128]
+//	128, // rx_coef_size
+//	{983040000,491520000,245760000,122880000,61440000,30720000}, // rx_path_clks[6]
+//	5533004 // rx_bandwidth
+//};
+
+//AD9361_TXFIRConfig tx_fir_config = {
+//	3, // tx
+//	0, // tx_gain
+//	2, // tx_int
+//	{3272,-11435,17277,-17976,14606,-12402,9074,-8258,5457,-5814,3206,-4405,1791,-3552,901,-2966,377,-2485,135,-2019,110,-1525,245,-1006,484,-495,755,-35,988,316,1121,506,1107,514,925,327,591,-11,147,-437,-335,-856,-757,-1171,-1031,-1277,-1062,-1126,-792,-669,-220,67,635,1023,1662,2122,2737,3211,3748,4145,4553,4812,5032,5123,5123,5032,4812,4553,4145,3748,3211,2737,2122,1662,1023,635,67,-220,-669,-792,-1126,-1062,-1277,-1031,-1171,-757,-856,-335,-437,147,-11,591,327,925,514,1107,506,1121,316,988,-35,755,-495,484,-1006,245,-1525,110,-2019,135,-2485,377,-2966,901,-3552,1791,-4405,3206,-5814,5457,-8258,9074,-12402,14606,-17976,17277,-11435,3272}, // tx_coef[128]
+//	128, // tx_coef_size
+//	{983040000,245760000,245760000,122880000,61440000,30720000}, // tx_path_clks[6]
+//	5648252 // tx_bandwidth
+//};
+
+//================================================================================================================================================================================================================
+
+
+
+
+
+
 struct ad9361_rf_phy *ad9361_phy;
 #ifdef FMCOMMS5
 struct ad9361_rf_phy *ad9361_phy_b;
@@ -393,26 +425,6 @@ uint32_t *rssi_db_x_1000;
 *******************************************************************************/
 int main(void)
 {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #ifdef XILINX_PLATFORM
 	Xil_ICacheEnable();
@@ -477,14 +489,21 @@ int main(void)
 
 
 
-	mdelay(1000);		// dylee add
+	mdelay(2000);		// dylee add
 
 
 
 	ad9361_set_tx_fir_config(ad9361_phy, tx_fir_config);
 	ad9361_set_rx_fir_config(ad9361_phy, rx_fir_config);
 
+	ad9361_set_rx_gain_control_mode(ad9361_phy, 0, 0);
+	console_print("rx1_gc_mode=%d\n", 0);
 
+	ad9361_set_rx_rf_gain(ad9361_phy, 0, 40);
+	console_print("rx1_rf_gain=%d\n", 40);
+
+	ad9361_set_rx_fir_en_dis(ad9361_phy, 1);
+	console_print("rx_fir_en=%d\n", 1);
 
 	mdelay(1000);		// dylee add
 
@@ -576,71 +595,22 @@ int main(void)
 		}
 		if(invalid_cmd == cmd_no)
 		{
-			console_print("Invalid command!\n");
 
-
-			/*console_print("\n=============== RSSI data ===============\n");
-
-			if(ad9361_get_rx_rssi(ad9361_phy, ch, rssi) == 0)
-			{
-				console_print("rssi->symbol = %d\n", rssi->symbol);
-				console_print("rssi->preamble = %d\n", rssi->preamble);
-				console_print("rssi->multiplier = %d\n", rssi->multiplier);
-			}
-			else
-			{
-				console_print("ERROR get RSSI\n");
-			}
-
-			console_print("\n=============== RSSI data END ===============\n");
-
-			console_print("\n=============== RSSI data dBm ===============\n");
-
-			float param_IQ = 10;	// (I^2 + Q^2) => data put in here
-			double power_dBm = 10 * log10(10*param_IQ);
-			// expected result = 20
-			console_print("RSSI power(dBm) = %f\n", power_dBm);
-
-			console_print("\n=============== RSSI data dBm END ===============\n");
-
-*/
-
-			/*
-			* when receive data
-			* to_struct
-			* Check protocol
-			* CMD ���� ���� send data function ����
-			* data send */
-			// send test
-			console_print("\n eco data test\n");
-
+			// receive and send protocol data test
 			char test_protocol_data[MAXDATA];
-
 			test_make_protocol_data(test_protocol_data);
 
+#ifdef DEBUG_PROTOCOL
 			for(int i  = 0; i < MAXDATA; i++)
 			{
 				console_print("test protocol data[%d] = 0x%x\n", i, test_protocol_data[i]);
 			}
+#endif
 
-			sleep(3);
+			eco_data_protocol(test_protocol_data, MAXDATA);
 
-			//eco_data_protocol(test_protocol_data, MAXDATA);
-			recv_test(test_protocol_data, MAXDATA);
-
-			sleep(3);
-
-			/*
-			received_cmd[29] = '\0';
-			//recv_test(received_cmd, strlen(received_cmd));
-
-			eco_data_protocol(received_cmd, strlen(received_cmd));
-
-			for(int i = 0; i < strlen(received_cmd); i++)
-			{
-				console_print("received_cmd data(char) = %c\n", received_cmd[i]);
-			}*/
 		}
+
 	}
 #endif
 
@@ -764,28 +734,6 @@ int main(void)
 #endif
 
 
-	consol_print("\n=============== RSSI data ===============\n");
-
-	uint8_t ch = 0;
-	struct rf_rssi *rssi;
-	uint32_t *rssi_db_x_1000;
-
-	int32_t rx_rssi = 0;
-	int32_t tx_rssi = 0;
-
-	rx_rssi = ad9361_get_rx_rssi(ad9361_phy, ch, rssi);
-	tx_rssi = ad9361_get_tx_rssi(ad9361_phy, ch, rssi_db_x_1000);
-
-	consol_print("rx_rssi data = %fdB\n", rx_rssi);
-	consol_print("tx_rssi data = %fdB\n", tx_rssi);
-
-	/* P(dBm) = 10*log10(10 * (I^2 + Q^2))
-	 * input_data = (I^2 + Q^2)*/
-	//double rssi_db = 10*log10(tx_rssi/rx_rssi);
-
-	//console_print("rssi data = %lfdB\n", rssi_db);
-
-	consol_print("\n=============== RSSI data END ===============\n");
 
 
 #ifdef XILINX_PLATFORM

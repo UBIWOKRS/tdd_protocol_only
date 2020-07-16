@@ -39,6 +39,10 @@
 #include "stdio.h"
 #include "console.h"
 
+// add to get register
+#include "parameters.h"
+#include "xil_io.h"
+
 #if 1
 
 /******************************************************************************/
@@ -371,11 +375,16 @@ void send_protocol_data(char *sendData, int size)
 	for(int i = 0; i < size; i++)
 	{
 		uart_write_char(sendData[i]);
+
+#ifdef DEBUG_PROTOCOL
 		//sleep(1);
 		console_print("sendData[%d] = 0x%x\n", i, sendData[i]);
+#endif
 	}
 
+#ifdef DEBUG_PROTOCOL
 	console_print("send complete\n");
+#endif
 }
 
 
@@ -400,7 +409,7 @@ void eco_data_protocol(char *recvData, int dataLength)
 
 	to_struct(recvData, recvProtocolData, dataLength);
 
-	print_protocol(recvProtocolData, dataLength);
+	//print_protocol(recvProtocolData, dataLength);
 
 	char send_sub[MAXSUB];
 
@@ -408,29 +417,35 @@ void eco_data_protocol(char *recvData, int dataLength)
 
 	GUIprotocol *sendProtocolData = (GUIprotocol*)malloc(sizeof(GUIprotocol) + sizeof(char) * sub_size);
 
-
-	console_print("\n sendProtocolData making complete\n");// ======================================================== delete
+#ifdef DEBUG_PROTOCOL
+	console_print("\n sendProtocolData making complete\n");
+#endif
 
 	make_protocol_data(recvProtocolData, sendProtocolData, send_sub, sub_size);
 
 	dataLength = sizeof(GUIprotocol) + sub_size;
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n send protocol data out\n");
+#endif
+
 	print_protocol(sendProtocolData, dataLength);
 
 	// ************************************ send ************************************
-
-	//char* sendData;
 	char sendData[MAXDATA];
 
 	to_array(sendProtocolData, sendData, dataLength);
 
+#ifdef DEBUG_PROTOCOL
 	sendData[dataLength-1] = '\0';
 	console_print("send data(sendData string) = %s\n", sendData);
+#endif
 
 	send_protocol_data(sendData, dataLength);
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n send protocol data complete\n\n");
+#endif
 
 	free(recvProtocolData);
 	free(sendProtocolData);
@@ -451,7 +466,7 @@ void recv_test(char *recvData, int size)
 
 	print_protocol(recvProtocolData, size);
 
-	char* destination;
+	char destination[MAXDATA];
 
 	to_array(recvProtocolData, destination, size);
 
@@ -490,7 +505,10 @@ void make_protocol_data(GUIprotocol* recvProtocolData, GUIprotocol* sendProtocol
 	{
 		sendProtocolData->Start[i] = START;
 	}
+
+#ifdef DEBUG_PROTOCOL
 	console_print("\n Start OK \n");
+#endif
 
 	/* setting Information */
 	/* swap source ID <-> destination ID */
@@ -507,7 +525,9 @@ void make_protocol_data(GUIprotocol* recvProtocolData, GUIprotocol* sendProtocol
 		sendProtocolData->Reserved[i] = UNKNOWN;
 	}
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n Reserved OK \n");
+#endif
 
 	sendProtocolData->Type_CMD = CMD;
 	sendProtocolData->Rcode = RCODE;		//	fix data 0x00
@@ -520,14 +540,18 @@ void make_protocol_data(GUIprotocol* recvProtocolData, GUIprotocol* sendProtocol
 		sendProtocolData->SUB_DATA[i] = send_SUB[i];
 	}
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n SUB_DATA OK \n");
+#endif
 
 	for(int i = 0; i < sizeof(sendProtocolData->CRC); i++)
 	{
 		sendProtocolData->CRC[i] = UNKNOWN;
 	}
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n CRC OK \n");
+#endif
 
 	/* setting End */
 	sendProtocolData->End = END;
@@ -596,7 +620,7 @@ void test_make_protocol_data(char* data)
 	// SUB_DATA
 	data[count] = 0x00;
 	count = count + 1;
-	data[count] = 0x00;
+	data[count] = 0x21;
 	count = count + 1;
 
 	// CRC
@@ -626,7 +650,9 @@ void test_make_protocol_data(char* data)
 *******************************************************************************/
 unsigned int check_protocol(GUIprotocol *receiveData, char* send_SUB)
 {
+#ifdef DEBUG_PROTOCOL
 	console_print("\n\n check protocol function\n");
+#endif
 
 	// passing data error check
 	unsigned int sub_data_size = 0;
@@ -646,7 +672,9 @@ unsigned int check_protocol(GUIprotocol *receiveData, char* send_SUB)
 		}
 	}
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n Start check\n");
+#endif
 
 	/* passing Information data */
 	// check source ID
@@ -674,7 +702,9 @@ unsigned int check_protocol(GUIprotocol *receiveData, char* send_SUB)
 		}
 	}
 
+#ifdef DEBUG_PROTOCOL
 	console_print("\n reserved OK \n");
+#endif
 
 	// check LEN
 	SUB_DATA_Length = make_length(receiveData->LEN);
@@ -688,17 +718,14 @@ unsigned int check_protocol(GUIprotocol *receiveData, char* send_SUB)
 	}
 
 	// check SUB_DATA
-
 	char temp_SUB[MAXSUB];
-	// check Type CMD
-	// cmd type에 따라서 응답함수 실행
 
 	// make sub data to short data ====================================================================================
 	/* unsigned char Length[2] data is an array so make it to unsigned short data
 	 * Big Edian
 	 * ex. Length[0] = 0x25, Length[1] = 0x30 => result = 0x2530
 	 * 0x25 data make it to 0x2500 and then combine with others*/
-	unsigned short result = 0;
+	unsigned short result = make_length(receiveData->SUB_DATA);
 	/*for(int i = 0; i < sizeof(receiveData->SUB_DATA)-1; i++)
 	{
 		result = (receiveData->SUB_DATA[i] << 8) + result;
@@ -712,7 +739,9 @@ unsigned int check_protocol(GUIprotocol *receiveData, char* send_SUB)
 
 		sub_data_size = main_status_response(result, temp_SUB);
 
+#ifdef DEBUG_PROTOCOL
 		console_print("\n sub_data_size = %d\n", sub_data_size);
+#endif
 
 		for(int i = 0; i < sub_data_size; i++)
 		{
@@ -853,16 +882,20 @@ void main_status_confirm()
 *******************************************************************************/
 unsigned int main_status_response(unsigned short sub_data, char* send_sub_data)
 {
+#ifdef DEBUG_PROTOCOL
 	console_print("\n main status response Start \n");
-	console_print("\n sub_data = %d \n", sub_data);
+	console_print("\n sub_data = 0x%x\n\n", sub_data);
+#endif
 
 	// [*(send_sub_data + 1)][*send_sub_data] = [0x41][0x43] => 0x4143
 	unsigned int sub_dataSize = 1;
+	double Peak_Stay = 0;
+	int result_avg_power = 0;
 
 	switch(sub_data)
 	{
 	/* Repeater ETC : Group 000 ~ 004 */
-	case 0x0000 :
+	case 0x00 :
 		// F/W Version No
 		// Version 2.0
 		*(send_sub_data+1) = 0x00;
@@ -872,7 +905,7 @@ unsigned int main_status_response(unsigned short sub_data, char* send_sub_data)
 
 		break;
 
-	case 0x0001 :
+	case 0x01 :
 		// FPGA Version No
 		// Version 2.0
 		*(send_sub_data+1) = 0x00;
@@ -882,36 +915,36 @@ unsigned int main_status_response(unsigned short sub_data, char* send_sub_data)
 
 		break;
 
-	case 0x0002 :
-	case 0x0003 :
-	case 0x0004 :
+	case 0x02 :
+	case 0x03 :
+	case 0x04 :
 		//Reserve
 
 		break;
 
 	/* Alarm :  Group 005 ~ 006 */
-	case 0x0005 :
+	case 0x05 :
 		// Normal : 0, Alarm : 1
 		// 0bit : T-Sync Alarm, 2bit ~ 7bit = Reserve
 
 		break;
 
-	case 0x0006 :
+	case 0x06 :
 		// 0~7bit = Reserve
 
 		break;
 
 	/* control (ON / OFF) : Group 007 ~ 009 */
-	case 0x0007 :
-	case 0x0008 :
-	case 0x0009 :
+	case 0x07 :
+	case 0x08 :
+	case 0x09 :
 		// 0 ~ 7 bit = Reserve
 
 		break;
 
 	/* Status : Group 010 ~ 026 */
-	case 0x0010 :
-	case 0x0011 :
+	case 0x10 :
+	case 0x11 :
 		/* Power Detec Power
 		 * signed short (0.1 dBm Step)
 		 * 무신호 / 테이블 보다 낮은 레벨일 경우 -100, GUI는 NA 표시
@@ -919,8 +952,8 @@ unsigned int main_status_response(unsigned short sub_data, char* send_sub_data)
 
 		break;
 
-	case 0x0012 :
-	case 0x0013 :
+	case 0x12 :
+	case 0x13 :
 		/* Slot 비율
 		 * unsigned short(단위 : ???) */
 
@@ -934,28 +967,28 @@ unsigned int main_status_response(unsigned short sub_data, char* send_sub_data)
 
 		break;
 
-	case 0x0015 :
+	case 0x15 :
 		// Reserve
 
 		break;
 
 	/*******************************************************************************************************************************/// Highlight
-	case 0x0016 :
-	case 0x0017 :
+	case 0x16 :
+	case 0x17 :
 		/* T Sync-0 출력 신호 Delay (front)
 		 * unsinged short (단위 : 1ns) */
 
 		break;
 
-	case 0x0018 :
-	case 0x0019 :
+	case 0x18 :
+	case 0x19 :
 		/* T Sync-1 출력 신호 Delay (front)
 		 * unsinged short (단위 : 1ns) */
 
 		break;
 
-	case 0x0020 :
-	case 0x0021 :
+	case 0x20 :
+	case 0x21 :
 		/* T Sync-2 출력 신호 Delay (front)
 		 * unsinged short (단위 : 1ns) */
 
@@ -963,70 +996,49 @@ unsigned int main_status_response(unsigned short sub_data, char* send_sub_data)
 
 		// 소방과제 : KT(1755) Power Det
 
-		/*console_print("\n=============== RSSI data ===============\n");
+		Peak_Stay = 10 * log(10*Xil_In32(GPIO_PEAK_PWR_ST + 0x08));
+		console_print("Keep Peak Power = %f dBm\n", (Peak_Stay-193));
 
-		if(ad9361_get_rx_rssi(ad9361_phy, ch, rssi) == 0)
-		{
-			console_print("rssi->symbol = %d\n", rssi->symbol);
-			console_print("rssi->preamble = %d\n", rssi->preamble);
-			console_print("rssi->multiplier = %d\n", rssi->multiplier);
-		}
-		else
-		{
-			console_print("ERROR get RSSI\n");
-		}
-
-		console_print("\n=============== RSSI data END ===============\n");
-
-		console_print("\n=============== RSSI data dBm ===============\n");
-
-		float param_IQ = 10;	// (I^2 + Q^2) => data put in here
-		double power_dBm = 10 * log10(10*param_IQ);
-		// expected result = 20
-		console_print("RSSI power(dBm) = %f\n", power_dBm);
-
-		console_print("\n=============== RSSI data dBm END ===============\n");*/
-
-		// data 처리 계산 필요
-		//protocolData->SUB_DATA[] = power_dBm;
+		result_avg_power = Peak_Stay / DIV;
+		console_print("\n result_avg_power = %d \n", result_avg_power);
 
 		// set power_dBm
-		*(send_sub_data+1) = 0x00;
-		*(send_sub_data) = 0x20;
+		*(send_sub_data+1) = result_avg_power / BYTE_1;
+		*(send_sub_data) = result_avg_power % BYTE_1;
 
 		break;
 	/************************************************************************************************************************/// Highlight end
 
-	case 0x0022 :
+	case 0x22 :
 		/* TDD MODE
 		 * 0x00 : DL, 0x01 : UL, 0x02 : AUTO
 		 * T Sync 신호 출력 고정으로 제어(MCU에서 DL로 명령시 High 고정출력, UL로 명령시 Low 고정 출력) */
 
 		break;
 
-	case 0x0023 :
+	case 0x23 :
 		/* 장비 구분
 		 * 0 : 소형, 1 : 초소형 */
 
 		break;
 
-	case 0x0024 :
-	case 0x0025 :
-	case 0x0026 :
+	case 0x24 :
+	case 0x25 :
+	case 0x26 :
 		// Reserve
 
 		break;
 
 	/* Level : Group 027 ~ 044 */
-	case 0x0027 :
-	case 0x0028 :
+	case 0x27 :
+	case 0x28 :
 		/* DL - UL - Transmission Periodicity
 		 * unsigned short (단위 : ???) */
 
 		break;
 
-	case 0x0029 :
-	case 0x0030 :
+	case 0x29 :
+	case 0x30 :
 		/* nrofDownlinkSlots
 		 * unsigned short (단위 : ???) */
 
